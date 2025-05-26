@@ -6,12 +6,18 @@ const { interpret } = require("./processor/interpreter");
 
 function loadEnvPlus(customDir) {
   if (!customDir) {
-    console.error("Error: Please provide a directory path for the .envp file.");
+    console.error(
+      "Error: Please provide a directory path for the .envit file."
+    );
     process.exit(1);
   }
-  const envFilePath = path.join(customDir, ".envit");
+
+  const envSuffix = process.env.NODE_ENV ? `.${process.env.NODE_ENV}` : "";
+  const envFileName = `.envit${envSuffix}`;
+  const envFilePath = path.join(customDir, envFileName);
+
   if (!fs.existsSync(envFilePath)) {
-    console.error(`.envp file not found in directory: ${customDir}`);
+    console.error(`${envFileName} file not found in directory: ${customDir}`);
     process.exit(1);
   }
 
@@ -63,7 +69,6 @@ function loadEnvPlus(customDir) {
       externalTypeDefs += "\n" + fs.readFileSync(extPath, "utf8");
     }
   });
-
   const allTypeDefs = customTypeBlocks.join("\n") + "\n" + externalTypeDefs;
   const customTypes = {};
   if (allTypeDefs.trim()) {
@@ -73,7 +78,6 @@ function loadEnvPlus(customDir) {
       if (match) {
         const typeName = match[1].toLowerCase();
         let defStr = match[2];
-
         defStr = defStr.replace(
           /:\s*(string|number|boolean|date|list|dictionary|any)(\s*[},])/gi,
           ': "$1"$2'
@@ -92,12 +96,20 @@ function loadEnvPlus(customDir) {
   const ast = parseTokens(tokens);
   const envVars = interpret(ast, customTypes);
   process.envp = envVars;
+
+  fs.watchFile(envFilePath, (curr, prev) => {
+    if (curr.mtimeMs !== prev.mtimeMs) {
+      console.log(`${envFileName} changed. Reloading configuration...`);
+      loadEnvPlus(customDir);
+    }
+  });
+
   return envVars;
 }
 
 if (require.main === module) {
   const envVars = loadEnvPlus(__dirname);
-  console.log("Parsed .envplus:", envVars);
+  console.log("Parsed .envit:", envVars);
 }
 
 module.exports = { loadEnvPlus };
