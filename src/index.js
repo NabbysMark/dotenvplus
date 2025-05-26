@@ -27,6 +27,7 @@ function loadEnvPlus(customDir) {
   let remainingLines = [];
   const customTypeBlocks = [];
   let currentTypeBlock = null;
+  let currentBraceCount = 0;
   const requireEnvTypePaths = [];
   for (let line of lines) {
     if (line.startsWith("REQUIRE_ENVTYPE(")) {
@@ -38,25 +39,23 @@ function loadEnvPlus(customDir) {
     }
     if (line.startsWith("type ")) {
       currentTypeBlock = line;
+      currentBraceCount =
+        (line.match(/{/g) || []).length - (line.match(/}/g) || []).length;
+      if (currentBraceCount === 0) {
+        customTypeBlocks.push(currentTypeBlock);
+        currentTypeBlock = null;
+      }
       continue;
-    } else if (
-      currentTypeBlock &&
-      (line.startsWith(" ") ||
-        line.startsWith("\t") ||
-        line.trim().startsWith('"') ||
-        line.includes(":"))
-    ) {
+    } else if (currentTypeBlock) {
       currentTypeBlock += "\n" + line;
-      if (line.trim().endsWith("}")) {
+      currentBraceCount +=
+        (line.match(/{/g) || []).length - (line.match(/}/g) || []).length;
+      if (currentBraceCount === 0) {
         customTypeBlocks.push(currentTypeBlock);
         currentTypeBlock = null;
       }
       continue;
     } else {
-      if (currentTypeBlock) {
-        customTypeBlocks.push(currentTypeBlock);
-        currentTypeBlock = null;
-      }
       remainingLines.push(line);
     }
   }
@@ -64,7 +63,7 @@ function loadEnvPlus(customDir) {
 
   let externalTypeDefs = "";
   requireEnvTypePaths.forEach((relPath) => {
-    const extPath = path.join(customDir, "..", relPath);
+    const extPath = path.join(customDir, relPath);
     if (fs.existsSync(extPath)) {
       externalTypeDefs += "\n" + fs.readFileSync(extPath, "utf8");
     }
