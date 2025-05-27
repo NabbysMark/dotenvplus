@@ -63,9 +63,14 @@ function loadEnvPlus(customDir) {
 
   let externalTypeDefs = "";
   requireEnvTypePaths.forEach((relPath) => {
-    const extPath = path.join(customDir, relPath);
+    let extPath = path.join(customDir, relPath);
+    if (!fs.existsSync(extPath)) {
+      extPath = path.join(__dirname, "..", "tests", relPath);
+    }
     if (fs.existsSync(extPath)) {
       externalTypeDefs += "\n" + fs.readFileSync(extPath, "utf8");
+    } else {
+      console.error(`External type file ${relPath} not found at ${extPath}`);
     }
   });
   const allTypeDefs = customTypeBlocks.join("\n") + "\n" + externalTypeDefs;
@@ -77,6 +82,7 @@ function loadEnvPlus(customDir) {
       if (match) {
         const typeName = match[1].toLowerCase();
         let defStr = match[2];
+        defStr = defStr.replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":');
         defStr = defStr.replace(
           /:\s*(string|number|boolean|date|list|dictionary|any)(\s*[},])/gi,
           ': "$1"$2'

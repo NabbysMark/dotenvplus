@@ -21,10 +21,10 @@ PORT: number = 3000
 DEBUG: boolean = true
 
 type database = {
-    "host": string,
-    "port": number,
-    "user": string,
-    "password": any
+    host: string,
+    port: number,
+    user: string,
+    password: any
 }
 
 DBINFO: database = {
@@ -58,9 +58,9 @@ An external custom type file might look like:
 ```conf
 // filepath: types.envtype
 type database = {
-    "host": string,
-    "port": number,
-    "user": string,
-    "password": any
+    host: string,
+    port: number,
+    user: string,
+    password: any
 }
 ```
